@@ -33,8 +33,8 @@ steps:
         '--allow-unauthenticated', # << Permite acesso público ao dashboard
         '--port',
         '8080', # << Porta que você expôs no Dockerfile
-        '--service-account',
-        '${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com', # Permite que o Cloud Build implante no Cloud Run
+        #'--service-account',
+        #'${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com', # Permite que o Cloud Build implante no Cloud Run
         '--quiet'
       ]
 
