@@ -1,0 +1,49 @@
+steps:
+  # 1. Constrói a imagem Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'southamerica-east1-docker.pkg.dev/${PROJECT_ID}/edupulses-repo/dashboard-b2b:${COMMIT_SHA}',
+        '.',
+      ]
+    # O timeout foi aumentado caso a instalação das dependências demore
+    timeout: '1200s' # 20 minutos
+
+  # 2. Envia a imagem Docker para o Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'southamerica-east1-docker.pkg.dev/${PROJECT_ID}/edupulses-repo/dashboard-b2b:${COMMIT_SHA}']
+
+  # 3. Implanta a nova imagem no Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run',
+        'deploy',
+        'dashboard-edupulses-b2b', # << Nome do seu serviço no Cloud Run (pode escolher)
+        '--image',
+        'southamerica-east1-docker.pkg.dev/${PROJECT_ID}/edupulses-repo/dashboard-b2b:${COMMIT_SHA}',
+        '--region',
+        'southamerica-east1', # << Região onde o Cloud Run será implantado (pode ser southamerica-east1 também)
+        '--platform',
+        'managed',
+        '--allow-unauthenticated', # << Permite acesso público ao dashboard
+        '--port',
+        '8080', # << Porta que você expôs no Dockerfile
+        '--service-account',
+        '${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com', # Permite que o Cloud Build implante no Cloud Run
+        '--quiet'
+      ]
+
+# Especifica onde as imagens construídas serão armazenadas
+images:
+  - 'southamerica-east1-docker.pkg.dev/${PROJECT_ID}/edupulses-repo/dashboard-b2b:${COMMIT_SHA}'
+
+# Opções de build
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # Define o tamanho da máquina usada para o build, se necessário (e.g., para builds mais pesados)
+  # machineType: 'E2_HIGHCPU_8'
