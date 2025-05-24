@@ -21,7 +21,7 @@ PLANOS_KEYWORDS = {
 PLANOS_VALIDOS = ['Pop', 'Profissional', 'Premium', 'Assincrono', 'Outros']
 PLANOS_DROPDOWN_OPCOES = ["Sem plano definido"] + PLANOS_VALIDOS
 
-
+##teste
 PERIODICIDADE_KEYWORDS = {
     'Anual': r'anual',
     'Semestral': r'semestral',
