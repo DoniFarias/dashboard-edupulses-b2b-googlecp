@@ -24,6 +24,48 @@ PERIODICIDADE_DROPDOWN_OPCOES = PERIODICIDADE_VALIDAS
 STATUS_CLIENTE_VALIDOS = ['Ativo', 'Inativo (Churned)']
 GCP_BUCKET_NAME = "dash-edu050823"
 GCP_FILE_PATH = "mapeamento_descricoes_edupulses.csv" # Nome do arquivo dentro do bucket
+APP_USERNAME_ENV_VAR = "APP_USERNAME"
+APP_PASSWORD_ENV_VAR = "APP_PASSWORD"
+
+def check_credentials(username_input, password_input):
+    """Verifica as credenciais contra as variáveis de ambiente."""
+    correct_username = os.environ.get(APP_USERNAME_ENV_VAR)
+    correct_password = os.environ.get(APP_PASSWORD_ENV_VAR)
+
+    # Para teste local, se as variáveis de ambiente não estiverem definidas:
+    if correct_username is None or correct_password is None:
+        st.warning("Credenciais de admin não configuradas no ambiente. Usando defaults para teste.")
+        correct_username = correct_username or "Edupulses"  # Default para teste local
+        correct_password = correct_password or "7817jbxjx@lshs987" # Default para teste local
+        # NÃO USE ESSES DEFAULTS EM PRODUÇÃO. Configure as variáveis de ambiente no Cloud Run.
+
+    if username_input == correct_username and password_input == correct_password:
+        return True
+    return False
+
+def login_form():
+    """Exibe o formulário de login e gerencia o estado de autenticação."""
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    
+    if not st.session_state.authenticated:
+        st.header("Login - Dashboard Edupulses B2B")
+        username = st.text_input("Usuário", key="login_user")
+        password = st.text_input("Senha", type="password", key="login_pass")
+
+        if st.button("Entrar", key="login_button"):
+            if check_credentials(username, password):
+                st.session_state.authenticated = True
+                st.rerun() # Re-executa para remover o formulário e mostrar o dashboard
+            else:
+                st.error("Usuário ou senha incorretos.")
+        return False # Indica que o usuário não está autenticado
+    return True # Indica que o usuário está autenticado
+
+def logout():
+    """Realiza o logout do usuário."""
+    st.session_state.authenticated = False
+    st.rerun() # Re-executa para mostrar o formulário de login novamente
 
 # --- Funções de Mapeamento ---
 def carregar_mapeamentos_salvos(GCP_BUCKET_NAME, GCP_FILE_PATH):
@@ -635,6 +677,15 @@ def processar_pipeline_completo(_df_bruto, _correcoes_map, _data_referencia_para
     df_com_metricas_cliente = adicionar_metricas_cliente(df_com_metricas_fatura)
     df_final_pipeline = analisar_ciclo_de_vida_clientes(df_com_metricas_cliente, _data_referencia_para_churn)
     return df_final_pipeline
+
+# CHAMA O FORMULÁRIO DE LOGIN E VERIFICA A AUTENTICAÇÃO
+if not login_form():
+    st.stop() # Impede a execução do restante do script se o login não for bem-sucedido
+
+# SE CHEGOU AQUI, O USUÁRIO ESTÁ AUTENTICADO
+st.sidebar.success(f"Autenticado como: {os.environ.get(APP_USERNAME_ENV_VAR, 'admin')}")
+st.sidebar.button("Sair", on_click=logout, key="logout_button")
+st.sidebar.markdown("---") # Adiciona um separador
 
 # --- INÍCIO DA INTERFACE STREAMLIT REORGANIZADA ---
 
